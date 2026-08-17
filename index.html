@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d1718" />
+  <title>إلى بسملة</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="experience" id="experience">
+    <!-- طبقتان للفيديو: لا تغيّري src للفيديو الظاهر مباشرة. script.js يتولى الـ crossfade. -->
+    <div class="video-stage" aria-hidden="true">
+      <!-- webkit-playsinline مضاف لدعم أجهزة آيفون القديمة، وposter يمنع ظهور إطار أسود قبل تجهّز الفيديو -->
+      <video id="videoLayerA" class="video-layer is-active" src="def.mp4" poster="def-poster.jpg" autoplay muted loop playsinline webkit-playsinline="true" preload="auto"></video>
+      <video id="videoLayerB" class="video-layer" muted loop playsinline webkit-playsinline="true" preload="none"></video>
+      <div class="cinema-wash"></div>
+      <div class="vignette"></div>
+    </div>
+
+    <!-- غلاف الصورة: يظهر بشكل كبير واحترافي قبل تشغيل الفيديو الافتراضي، ويختفي بهدوء بمجرد أن يبدأ الفيديو فعليًا بالتشغيل (أو بعد وقت قصير كحل احتياطي). لتغيير الصورة، استبدلي ملف cover.jpg بجانب index.html بصورتكِ (يفضّل أن تكون أفقية عريضة عالية الدقة). -->
+    <div id="preloadCover" class="preload-cover" aria-hidden="true">
+      <img id="preloadCoverImage" class="preload-cover-image" src="cover.jpeg" alt="" />
+    </div>
+
+    <div id="cursorGlow" class="cursor-glow" aria-hidden="true"></div>
+
+    <section class="intro" id="intro" aria-labelledby="intro-title">
+      <div class="intro-letter glass">
+        <p class="eyebrow">عالم صغير صُنع لكِ</p>
+        <h1 id="intro-title" class="sr-only">رسالة إلى بسملة</h1>
+        <div id="introText" class="intro-text" aria-live="polite"></div>
+        <button id="enterButton" class="enter-button" type="button" hidden>
+          <span>والآن... اختاري العالم الذي يشبهكِ.</span><span aria-hidden="true">←</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="hud controls" id="hud">
+      <button id="settingsButton" class="round-button" type="button" aria-label="فتح إعدادات العالم" aria-expanded="false" aria-controls="settingsPanel">
+        <span aria-hidden="true">✦</span>
+      </button>
+
+      <section class="audio-controller glass" aria-label="التحكم بالصوت">
+        <button id="audioToggle" class="audio-toggle" type="button" aria-label="تشغيل الصوت" aria-pressed="false"><span aria-hidden="true">🔇</span></button>
+        <div class="audio-copy"><span>صوت العالم</span><strong id="currentSoundLabel">صامت</strong></div>
+        <label class="volume-control" for="volumeRange"><span class="sr-only">مستوى الصوت</span><input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
+      </section>
+    </div>
+
+    <div class="panel-scrim" id="panelScrim"></div>
+    <aside class="settings-panel glass" id="settingsPanel" aria-label="اختاري عالمكِ" aria-hidden="true">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <header class="panel-header"><div><p class="eyebrow">رحلة خاصة</p><h2>اختاري عالمكِ</h2></div><button id="closePanelButton" class="close-button" type="button" aria-label="إغلاق">×</button></header>
+
+      <div class="panel-scroll">
+        <section class="panel-section">
+          <button class="world-option selected" type="button" data-world="default">
+            <span class="option-icon">🌙</span><span><strong>عالمي لكِ</strong><small>العالم الذي أعود إليه كلما أردت أن أراكِ... ولو للحظة.</small></span>
+          </button>
+          <button class="world-option" type="button" data-world="seasons" aria-expanded="false">
+            <span class="option-icon">🌸</span><span><strong>فصول تشبهكِ</strong><small>لأن لكل فصل جماله... وأنتِ أجمل ما فيه.</small></span><span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="season-list" id="seasonList" hidden></div>
+          <button class="world-option" type="button" data-world="nature" aria-expanded="false">
+            <span class="option-icon">✨</span><span><strong>كل الجمال</strong><small>جمعتُ لكِ الأشياء التي أحبها، لأن كل شيء جميل يذكرني بكِ.</small></span><span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="nature-list" id="natureList" hidden></div>
+        </section>
+
+        <section class="panel-section sound-section" aria-labelledby="sound-title">
+          <div class="section-title"><p class="eyebrow">اختاري الإحساس</p><h3 id="sound-title">صوت عالمكِ</h3></div>
+
+          <!-- هذا الزر كان مفقودًا من قبل وهو سبب توقف كل الأزرار عن العمل -->
+          <button id="originalVideoSound" class="sound-button selected" type="button">
+            <span>🎬 صوت الفيديو الأصلي</span><small>اختيار</small>
+          </button>
+
+          <div class="sound-list" id="soundList"></div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- عنصر الصوت الوحيد في الموقع. يتم تغيير مصدره مع fade in/out من script.js. -->
+    <audio id="ambientAudio" loop preload="none"></audio>
+    <p id="statusMessage" class="sr-only" aria-live="polite"></p>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
