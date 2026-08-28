@@ -142,7 +142,7 @@ function initializeApp() {
   }
 
   // شبكة أمان فقط: لو لم يتم الضغط على زر الدخول لأي سبب، تختفي الصورة تلقائيًا بعد مدة طويلة نسبيًا
-  window.setTimeout(hideCoverImage, 9000);
+  window.setTimeout(hideCoverImage, 150000);
 
 
   // تشغيل الفيديو فقط.
