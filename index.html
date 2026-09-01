@@ -18,7 +18,7 @@
       <div class="vignette"></div>
     </div>
 
-    <!-- غلاف الصورة: يظهر بشكل كبير واحترافي قبل تشغيل الفيديو الافتراضي، ويختفي بهدوء بمجرد أن يبدأ الفيديو فعليًا بالتشغيل (أو بعد وقت قصير كحل احتياطي). لتغيير الصورة، استبدلي ملف cover.jpg بجانب index.html بصورتكِ (يفضّل أن تكون أفقية عريضة عالية الدقة). -->
+    <!-- غلاف الصورة: يظهر بشكل كبير واحترافي قبل تشغيل الفيديو الافتراضي، ويختفي بهدوء فقط بعد أن تضغطي مرتين على زر الدخول. لتغيير الصورة، استبدلي ملف cover.jpg بجانب index.html بصورتكِ (يفضّل أن تكون أفقية عريضة عالية الدقة). -->
     <div id="preloadCover" class="preload-cover" aria-hidden="true">
       <img id="preloadCoverImage" class="preload-cover-image" src="cover.jpeg" alt="" />
     </div>
@@ -27,12 +27,12 @@
 
     <section class="intro" id="intro" aria-labelledby="intro-title">
       <div class="intro-letter glass">
-        <p class="eyebrow">عالم صغير صُنع لكِ</p>
         <h1 id="intro-title" class="sr-only">رسالة إلى بسملة</h1>
         <div id="introText" class="intro-text" aria-live="polite"></div>
         <button id="enterButton" class="enter-button" type="button" hidden>
-          <span>والآن... اختاري العالم الذي يشبهكِ.</span><span aria-hidden="true">←</span>
+          <span id="enterButtonLabel">للانتقال إلى عالمكِ، اضغطي مرتين</span><span aria-hidden="true">←</span>
         </button>
+        <p id="pressHint" class="press-hint" aria-live="polite"></p>
       </div>
     </section>
 
