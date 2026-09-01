@@ -44,10 +44,19 @@ const sounds = [
 ];
 
 
+// جملة واحدة فقط ظاهرة في المقدمة.
 const introLines = [
- 
   "تفضلي إلى عالمكِ ❤️"
 ];
+
+
+// إعدادات "الضغط مرتين" للدخول + مدة بقاء صورة الغلاف
+const ENTRY_SETTINGS = {
+  doublePressWindowMs: 2200, // المهلة المسموحة بين الضغطة الأولى والثانية
+  hintText: "اضغطي مرة أخرى لتدخلي إلى عالمكِ ✨",
+  coverHideDelayMs: 3600, // صورة الغلاف تبقى ظاهرة لمدة أطول بعد الدخول قبل أن تتلاشى
+  coverSafetyNetMs: 300000 // شبكة أمان: تختفي تلقائيًا لو لم يتم الضغط إطلاقًا
+};
 
 
 const state = {
@@ -63,7 +72,11 @@ const state = {
   audioRequestId: 0,
 
   videoTransitioning: false,
-  idleTimer: null
+  idleTimer: null,
+
+  // حالة عدّاد الضغط المزدوج على زر الدخول
+  entryPressCount: 0,
+  entryPressTimer: null
 };
 
 
@@ -127,7 +140,7 @@ function initializeApp() {
   revealControls();
 
 
-  // صورة الغلاف تفضل ظاهرة حتى تضغطي زر "ادخلي" (وبعدها بشوية) — الإخفاء الفعلي مربوط بحدث الضغط بالأسفل في bindEvents
+  // صورة الغلاف تفضل ظاهرة حتى تضغطي زر "ادخلي" مرتين — الإخفاء الفعلي مربوط بذلك في bindEvents
   const coverImage = $("#preloadCoverImage");
 
   // إن لم تكن صورة الغلاف (cover.jpg) موجودة بعد، تُخفى بهدوء دون ترك أيقونة صورة معطوبة
@@ -142,11 +155,11 @@ function initializeApp() {
   }
 
   // شبكة أمان فقط: لو لم يتم الضغط على زر الدخول لأي سبب، تختفي الصورة تلقائيًا بعد مدة طويلة نسبيًا
-  window.setTimeout(hideCoverImage, 300000);
+  window.setTimeout(hideCoverImage, ENTRY_SETTINGS.coverSafetyNetMs);
 
 
   // تشغيل الفيديو فقط.
-  // الصوت لن يبدأ إلا بعد الضغط على "ادخلي"
+  // الصوت لن يبدأ إلا بعد إتمام الضغط مرتين على "ادخلي"
   videoA.play().catch(() => {});
 }
 
@@ -176,7 +189,7 @@ function initializeDefaultVideo() {
 // DEFAULT AUDIO
 // ========================
 // تم إلغاء التشغيل التلقائي هنا.
-// الصوت سيبدأ من زر "ادخلي" فقط.
+// الصوت سيبدأ فقط بعد إتمام الضغط مرتين على "ادخلي".
 
 function startDefaultAmbientAudio() {
   const source = sounds[0].file;
@@ -1067,115 +1080,151 @@ function wait(ms) {
 
 
 // ========================
+// ENTER THE WORLD (تتطلب ضغطتين)
+// ========================
+
+// الضغطة الأولى: تُظهر رسالة "اضغطي مرة أخرى" وتبدأ عدّاد مهلة.
+// الضغطة الثانية (خلال المهلة): تُشغّل الصوت وتُخفي المقدمة، وبعدها بقليل تتلاشى صورة الغلاف.
+function handleEnterPress() {
+
+  state.entryPressCount += 1;
+
+  if (state.entryPressCount === 1) {
+
+    const hint = $("#pressHint");
+
+    if (hint) hint.textContent = ENTRY_SETTINGS.hintText;
+
+    const label = $("#enterButtonLabel");
+
+    if (label) label.classList.add("is-armed");
+
+    window.clearTimeout(state.entryPressTimer);
+
+    state.entryPressTimer = window.setTimeout(() => {
+
+      // انتهت المهلة قبل الضغطة الثانية — إعادة الضبط
+      state.entryPressCount = 0;
+
+      const hintReset = $("#pressHint");
+
+      if (hintReset) hintReset.textContent = "";
+
+      const labelReset = $("#enterButtonLabel");
+
+      if (labelReset) labelReset.classList.remove("is-armed");
+
+    }, ENTRY_SETTINGS.doublePressWindowMs);
+
+    return;
+  }
+
+
+  // الضغطة الثانية: ألغي المهلة وأتممي الدخول
+  window.clearTimeout(state.entryPressTimer);
+
+  state.entryPressCount = 0;
+
+  enterExperience();
+}
+
+
+async function enterExperience() {
+
+  // إخفاء المقدمة
+  hideIntro();
+
+  const hint = $("#pressHint");
+
+  if (hint) hint.textContent = "";
+
+
+  // صورة الغلاف تفضل ظاهرة لمدة أطول بعد الدخول، وبعدين تنتقل بالراحة للفيديو
+  window.setTimeout(
+    hideCoverImage,
+    ENTRY_SETTINGS.coverHideDelayMs
+  );
+
+
+  // التأكد من تشغيل الفيديو الافتراضي فعليًا
+  state.activeVideo.play().catch(() => {});
+
+
+  const requestId = beginAudioAction();
+
+
+  // ملف الصوت الافتراضي
+  const source = sounds[0].file;
+
+
+  // ضبط حالة الصوت
+  state.audioMode = "ambient";
+
+  state.currentAudioFile = source;
+
+  state.currentSoundName = sounds[0].name;
+
+  state.audioEnabled = true;
+
+
+  // إيقاف أي تشغيل سابق
+  ambientAudio.pause();
+
+  ambientAudio.currentTime = 0;
+
+
+  // تحميل def.mp3
+  ambientAudio.src = source;
+
+  ambientAudio.load();
+
+
+  // البداية من صفر حتى يبدأ الـ Fade من الصمت
+  ambientAudio.volume = 0;
+
+
+  try {
+
+    // مهم جدًا: play() هنا داخل حدث ضغط، لذلك المتصفح يسمح بتشغيل الصوت
+    await ambientAudio.play();
+
+    if (requestId !== state.audioRequestId) return;
+
+
+    // Fade In سينمائي من 0% إلى مستوى الصوت المختار
+    await fadeAudio(
+      state.volume,
+      1200,
+      requestId
+    );
+
+
+    updateAudioUI();
+
+  } catch (error) {
+
+    if (requestId !== state.audioRequestId) return;
+
+    state.audioEnabled = false;
+
+    console.warn("تعذر تشغيل الصوت:", error);
+
+    updateAudioUI();
+  }
+}
+
+
+// ========================
 // EVENTS
 // ========================
 
 function bindEvents() {
 
-  // ==========================================
-  // زر "ادخلي"
-  // الصوت يبدأ هنا فورًا مع ضغطة المستخدم
-  // ==========================================
-
+  // زر "ادخلي" يتطلب ضغطتين قبل بدء التجربة
   on(
     "#enterButton",
     "click",
-    async () => {
-
-      // إخفاء المقدمة
-      hideIntro();
-
-
-      // صورة الغلاف تفضل ظاهرة شويّة بعد الضغط، وبعدين تنتقل بالراحة للفيديو
-      window.setTimeout(
-        hideCoverImage,
-        1800
-      );
-
-
-      const requestId =
-        beginAudioAction();
-
-
-      // ملف الصوت الافتراضي
-      const source =
-        sounds[0].file;
-
-
-      // ضبط حالة الصوت
-      state.audioMode =
-        "ambient";
-
-
-      state.currentAudioFile =
-        source;
-
-
-      state.currentSoundName =
-        sounds[0].name;
-
-
-      state.audioEnabled =
-        true;
-
-
-      // إيقاف أي تشغيل سابق
-      ambientAudio.pause();
-
-      ambientAudio.currentTime =
-        0;
-
-
-      // تحميل def.mp3
-      ambientAudio.src =
-        source;
-
-      ambientAudio.load();
-
-
-      // البداية من صفر
-      // حتى يبدأ الـ Fade من الصمت
-      ambientAudio.volume = 0;
-
-
-      try {
-
-        // مهم جدًا:
-        // play() هنا داخل click
-        // لذلك المتصفح يسمح بتشغيل الصوت
-        await ambientAudio.play();
-
-        if (requestId !== state.audioRequestId) return;
-
-
-        // Fade In سينمائي
-        // من 0% إلى 55% خلال 1.2 ثانية
-        await fadeAudio(
-          state.volume,
-          1200,
-          requestId
-        );
-
-
-        updateAudioUI();
-
-      } catch (error) {
-
-        if (requestId !== state.audioRequestId) return;
-
-        state.audioEnabled =
-          false;
-
-
-        console.warn(
-          "تعذر تشغيل الصوت:",
-          error
-        );
-
-
-        updateAudioUI();
-      }
-    }
+    handleEnterPress
   );
 
 
